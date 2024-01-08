@@ -5,17 +5,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"math/rand"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/google/uuid"
+	"github.com/icrowley/fake"
 )
-
-// How is this different from Postgres?
-// How is Clickhouse better than postgres and in what situations?
-// What are the bottlenecks of Clickhouse?
-// Comparision of Postgres and Clickhouse?
-// When clickhouse should not be used?
-// How can be generate analytical data reports in real-time?
 
 func main() {
 	conn, err := connect()
@@ -27,6 +23,23 @@ func main() {
 	rows, err := conn.Query(ctx, "SELECT event,event_type FROM event_data LIMIT 5")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Insert 100 dummy rows
+	for i := 0; i < 100; i++ {
+
+		event := fake.Word()
+		eventType := fake.Word()
+		userID := rand.Intn(1000) + 1
+		source := rand.Intn(3) + 1
+		utmContent := fake.Word()
+		sessionID := uuid.New().String()
+
+		// Insert the dummy data into the events table
+		_, err := conn.Query(ctx, `INSERT INTO event_data (event, event_type, user_id, source, utm_content, session_id) VALUES (?, ?, ?, ?, ?, ?)`, event, eventType, userID, source, utmContent, sessionID)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	}
 
 	for rows.Next() {
